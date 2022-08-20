@@ -1,0 +1,26 @@
+services:
+
+  zookeeper:
+    platform: linux/amd64
+    image: bitnami/zookeeper
+    env_file:
+      - config/zookeeper.env
+    ports:
+      - 2181:2181
+  
+  kafka:
+    platform: linux/amd64
+    image: bitnami/kafka
+    env_file:
+      - config/kafka.env
+    ports:
+      - 9092:9092
+    depends_on:
+      - zookeeper
+  
+  test:
+    build:
+      context: .
+      dockerfile: build/test.dockerfile
+    env_file:
+      - config/consumer.env
