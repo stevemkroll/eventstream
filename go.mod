@@ -6,6 +6,7 @@ require (
 	github.com/Shopify/sarama v1.36.0
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
+	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 )
 
 require (
@@ -39,7 +40,7 @@ require (
 	github.com/subosito/gotenv v1.3.0 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/net v0.0.0-20220809184613-07c6da5e1ced // indirect
-	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

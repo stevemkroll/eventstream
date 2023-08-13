@@ -6,13 +6,16 @@ import (
 	"strings"
 
 	"github.com/Shopify/sarama"
+	"golang.org/x/exp/slog"
 )
 
-type handler struct{}
+type handler struct {
+	*slog.Logger
+}
 
 func (handler) Setup(_ sarama.ConsumerGroupSession) error   { return nil }
 func (handler) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
-func (h *handler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+func (h *handler) ConsumeClaim(_ sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
 		var str strings.Builder
 		str.WriteString(fmt.Sprint("Headers | ", msg.Headers, "\n"))
@@ -22,12 +25,12 @@ func (h *handler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama
 		str.WriteString(fmt.Sprint("Topic | ", msg.Topic, "\n"))
 		str.WriteString(fmt.Sprint("Value | ", string(msg.Value), "\n"))
 		str.WriteString(fmt.Sprint("Timestamp | ", msg.Timestamp.String(), "\n"))
-		fmt.Println(str.String())
+		h.Info(str.String())
 	}
 	return nil
 }
 
-func RunConsumer() {
+func RunConsumer(ctx context.Context) {
 	group, err := sarama.NewConsumerGroup([]string{addr}, group, config)
 	if err != nil {
 		panic(err)
@@ -36,16 +39,15 @@ func RunConsumer() {
 
 	go func() {
 		for err := range group.Errors() {
-			fmt.Println("ERROR", err)
+			slog.ErrorCtx(ctx, "consumer errors", err)
 		}
 	}()
 
-	ctx := context.Background()
-	for {
-		topics := []string{topic}
-		err := group.Consume(ctx, topics, new(handler))
-		if err != nil {
-			panic(err)
-		}
+	topics := []string{topic}
+	err = group.Consume(ctx, topics, &handler{
+		slog.Default(),
+	})
+	if err != nil {
+		panic(err)
 	}
 }

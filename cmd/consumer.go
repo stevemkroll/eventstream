@@ -1,21 +1,21 @@
 package cmd
 
 import (
-	"fmt"
-	"log"
-	"os"
-
-	"github.com/stevemkroll/eventstream/internal/service"
+	"context"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/stevemkroll/eventstream/internal/service"
+	"golang.org/x/exp/slog"
 )
 
 var run bool
 
 func init() {
 	consumerCmd.Flags().BoolVarP(&run, "run", "r", true, "run the consumer")
-	consumerCmd.MarkFlagRequired("run")
+	if err := consumerCmd.MarkFlagRequired("run"); err != nil {
+		panic(err)
+	}
 	rootCmd.AddCommand(consumerCmd)
 }
 
@@ -23,15 +23,15 @@ var consumerCmd = &cobra.Command{
 	Use:   "consumer",
 	Short: "event streaming consumer",
 	Run: func(_ *cobra.Command, _ []string) {
-		log.Println("| reading config")
+		ctx := context.Background()
+		slog.InfoCtx(ctx, "reading config")
 		viper.SetConfigFile("config/consumer.env")
 		if err := viper.ReadInConfig(); err != nil {
-			fmt.Println("Can't read config:", err)
-			os.Exit(1)
+			slog.ErrorCtx(ctx, "unable to read config", err)
+			panic(err)
 		}
-
-		log.Println("| running consumer")
+		slog.InfoCtx(ctx, "staring consumer")
 		service.RunConfig()
-		service.RunConsumer()
+		service.RunConsumer(ctx)
 	},
 }

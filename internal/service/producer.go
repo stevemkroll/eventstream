@@ -1,11 +1,8 @@
 package service
 
 import (
-	"log"
-	"os"
-	"os/signal"
-
 	"github.com/Shopify/sarama"
+	"golang.org/x/exp/slog"
 )
 
 func RunProducer(msg string) {
@@ -14,24 +11,12 @@ func RunProducer(msg string) {
 		panic(err)
 	}
 	defer producer.Close()
-
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt)
-
-	var enqueued, producerErrors int
-	for {
-		select {
-		case producer.Input() <- &sarama.ProducerMessage{Topic: topic, Key: nil, Value: sarama.StringEncoder(msg)}:
-			enqueued++
-		case err := <-producer.Errors():
-			log.Println("| Failed to produce message", err)
-			producerErrors++
-		case ok := <-producer.Successes():
-			log.Println("| Success", ok)
-			os.Exit(1)
-		case <-signals:
-			log.Printf("| Enqueued: %d; errors: %d\n", enqueued, producerErrors)
-			return
-		}
+	select {
+	case producer.Input() <- &sarama.ProducerMessage{Topic: topic, Key: nil, Value: sarama.StringEncoder(msg)}:
+		slog.Info("producer", "message", msg)
+	case err := <-producer.Errors():
+		slog.Error("producer", "message failed", err)
+	case ok := <-producer.Successes():
+		slog.Info("producer", "success", ok)
 	}
 }
